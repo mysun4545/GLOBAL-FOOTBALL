@@ -1,0 +1,17 @@
+
+# Google Apps Script project settings
+.clasp.json
+
+# Google authentication files
+.clasprc.json
+clasprc.json
+
+# Environment / secret files
+.env
+.env.*
+
+# Node dependencies
+node_modules/
+
+# Logs
+*.log
