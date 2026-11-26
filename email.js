@@ -139,3 +139,80 @@ function countMatchStatus() {
   Logger.log("예정 경기: " + upcoming);
   Logger.log("기타 데이터: " + other);
 }
+
+
+/**
+ * ESPN에서 수집한 최근 경기 결과를 이메일로 발송
+ * (최근 2일 이내에 끝난 경기, 리그별로 묶어서 표시)
+ */
+function sendEspnResultsEmail() {
+  const sheet =
+    SpreadsheetApp.getActiveSpreadsheet().getSheetByName("경기정보");
+
+  if (!sheet) {
+    throw new Error("경기정보 시트를 찾을 수 없습니다.");
+  }
+
+  const recipient =
+    PropertiesService.getScriptProperties().getProperty("EMAIL_RECIPIENT");
+
+  if (!recipient) {
+    throw new Error("EMAIL_RECIPIENT 스크립트 속성이 설정되지 않았습니다.");
+  }
+
+  const tz = Session.getScriptTimeZone();
+  const cutoff = Utilities.formatDate(
+    new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+    tz,
+    "yyyy-MM-dd",
+  );
+
+  const results = sheet
+    .getDataRange()
+    .getValues()
+    .slice(1)
+    .filter((row) => {
+      return (
+        String(row[8]).indexOf(ESPN_URL) === 0 &&
+        String(row[7]).trim() === "완료" &&
+        formatSheetDate(row[1]) >= cutoff
+      );
+    })
+    .sort((a, b) => {
+      const ka = formatSheetDate(a[1]) + " " + String(a[2]);
+      const kb = formatSheetDate(b[1]) + " " + String(b[2]);
+      return ka.localeCompare(kb);
+    });
+
+  if (results.length === 0) {
+    Logger.log("발송할 최근 경기 결과가 없습니다.");
+    return;
+  }
+
+  const byLeague = {};
+  results.forEach((row) => {
+    const league = String(row[0]);
+    if (!byLeague[league]) byLeague[league] = [];
+    byLeague[league].push(row);
+  });
+
+  let body = "GLOBAL FOOTBALL\n";
+  body += "최근 경기 결과 안내\n";
+  body += "================================\n\n";
+
+  Object.keys(byLeague).forEach((league) => {
+    body += "[" + league + "]\n";
+    byLeague[league].forEach((row) => {
+      body +=
+        formatSheetDate(row[1]) + "  " +
+        row[3] + " " + row[5] + " : " + row[6] + " " + row[4] + "\n";
+    });
+    body += "\n";
+  });
+
+  body += "출처: ESPN 스코어보드 (개인 학습용 비상업 프로젝트)\n";
+
+  GmailApp.sendEmail(recipient, "[GLOBAL FOOTBALL] 최근 경기 결과", body);
+
+  Logger.log("경기 결과 이메일 발송 완료! 경기 수: " + results.length);
+}

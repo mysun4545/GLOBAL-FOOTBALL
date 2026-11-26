@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GLOBAL-FOOTBALL | 해외축구 정보 플랫폼</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body>
+    <header class="header">
+      <div class="container nav">
+        <a href="#" class="logo">GLOBAL<span>FOOTBALL</span></a>
+
+        <nav>
+          <a href="#matches">경기 정보</a>
+          <a href="#leagues">리그</a>
+          <a href="#email">이메일 알림</a>
+        </nav>
+
+        <a href="#matches" class="nav-button">경기 확인하기</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="container hero-content">
+          <div class="hero-text">
+            <span class="eyebrow">YOUR GLOBAL FOOTBALL CENTER</span>
+            <h1>전 세계 축구 정보를<br /><span>한눈에 확인하다.</span></h1>
+            <p>
+              해외 주요 축구 리그의 경기 일정과 결과를<br />
+              GLOBAL-FOOTBALL에서 간편하게 확인하세요.
+            </p>
+            <a href="#matches" class="primary-button">경기 결과 확인하기</a>
+          </div>
+
+          <div class="hero-panel">
+            <span class="panel-label">MATCH CENTER</span>
+            <div class="panel-line"></div>
+            <div class="panel-info">
+              <span>FOOTBALL DATA</span>
+              <strong>경기부터 결과까지</strong>
+              <p>다양한 해외축구 정보를 한곳에서</p>
+            </div>
+            <div class="panel-bottom">
+              <span>GLOBAL</span>
+              <span>01 / MATCH</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="quick-info container">
+        <div>
+          <span class="info-number">01</span>
+          <strong>경기 일정</strong>
+          <p>다가오는 경기 확인</p>
+        </div>
+        <div>
+          <span class="info-number">02</span>
+          <strong>경기 결과</strong>
+          <p>완료된 경기 스코어 확인</p>
+        </div>
+        <div>
+          <span class="info-number">03</span>
+          <strong>이메일 알림</strong>
+          <p>경기 정보를 이메일로 전달</p>
+        </div>
+      </section>
+
+      <section class="section container" id="leagues">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">LEAGUES</span>
+            <h2>주요 해외축구 리그</h2>
+          </div>
+          <p>다양한 리그의 정보를<br />순차적으로 확대할 예정입니다.</p>
+        </div>
+
+        <div class="league-list">
+          <button class="league-card active" data-league="EPL">
+            <span class="league-country">ENGLAND</span>
+            <strong>Premier League</strong>
+            <span class="league-short">EPL</span>
+          </button>
+
+          <button class="league-card" data-league="La Liga">
+            <span class="league-country">SPAIN</span>
+            <strong>La Liga</strong>
+            <span class="league-short">LL</span>
+          </button>
+
+          <button class="league-card" data-league="Bundesliga">
+            <span class="league-country">GERMANY</span>
+            <strong>Bundesliga</strong>
+            <span class="league-short">BL</span>
+          </button>
+
+          <button class="league-card" data-league="Serie A">
+            <span class="league-country">ITALY</span>
+            <strong>Serie A</strong>
+            <span class="league-short">SA</span>
+          </button>
+
+          <button class="league-card" data-league="Ligue 1">
+            <span class="league-country">FRANCE</span>
+            <strong>Ligue 1</strong>
+            <span class="league-short">L1</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="section match-section" id="matches">
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow">MATCH CENTER</span>
+              <h2>경기 일정 및 결과</h2>
+            </div>
+            <p>원하는 리그와 경기 상태를 선택해<br />경기 정보를 확인하세요.</p>
+          </div>
+
+          <div class="match-toolbar">
+            <div class="filter-group">
+              <label for="leagueFilter">리그</label>
+              <select id="leagueFilter">
+                <option value="all">전체 리그</option>
+                <option value="EPL">EPL</option>
+                <option value="La Liga">라리가</option>
+                <option value="Bundesliga">분데스리가</option>
+                <option value="Serie A">세리에 A</option>
+                <option value="Ligue 1">리그 1</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label for="statusFilter">경기 상태</label>
+              <select id="statusFilter">
+                <option value="all">전체 경기</option>
+                <option value="완료">경기 완료</option>
+                <option value="예정">경기 예정</option>
+              </select>
+            </div>
+
+            <div class="filter-group search-group">
+              <label for="teamSearch">구단 검색</label>
+              <input
+                id="teamSearch"
+                type="search"
+                placeholder="구단명을 입력하세요"
+              />
+            </div>
+          </div>
+
+          <div class="match-summary">
+            <div>
+              <span class="summary-label">MATCH LIST</span>
+              <h3>전체 경기 정보</h3>
+            </div>
+            <span id="matchCount">경기 정보를 불러오는 중...</span>
+          </div>
+
+          <div id="matchList" class="match-list">
+            <div class="loading-message">경기 정보를 불러오고 있습니다.</div>
+          </div>
+
+          <p class="data-notice" id="dataNotice" role="status" aria-live="polite">
+            Apps Script에서 경기 데이터를 불러오는 중입니다.
+          </p>
+        </div>
+      </section>
+
+      <section class="email-section" id="email">
+        <div class="container email-content">
+          <div>
+            <span class="eyebrow">FOOTBALL NEWS BY EMAIL</span>
+            <h2>경기 정보를<br />이메일로 받아보세요.</h2>
+            <p>
+              주요 해외축구 경기 정보를 이메일로 전달하는<br />
+              서비스를 준비하고 있습니다.
+            </p>
+          </div>
+
+          <form id="emailForm" class="email-form">
+            <label for="emailAddress">이메일 주소</label>
+            <input
+              type="email"
+              id="emailAddress"
+              placeholder="이메일 주소를 입력하세요"
+              required
+            />
+            <button type="submit">이메일 알림 신청하기</button>
+            <p id="emailMessage">
+              이메일 발송 기능은 기존 Apps Script와 연결할 예정입니다.
+            </p>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-content">
+        <a href="#" class="logo">GLOBAL<span>FOOTBALL</span></a>
+        <p>Overseas Football Information Service</p>
+        <span>© 2026 GLOBAL-FOOTBALL. All rights reserved.</span>
+      </div>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>

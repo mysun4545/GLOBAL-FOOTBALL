@@ -76,20 +76,19 @@ function collectEPLMatches() {
       ];
     });
 
-  // 기존 경기 데이터 삭제 (헤더는 유지)
-  if (sheet.getLastRow() > 1) {
-    sheet.getRange(
-      2,
-      1,
-      sheet.getLastRow() - 1,
-      sheet.getLastColumn()
-    ).clearContent();
+  // 이 CSV에서 가져온 기존 행만 삭제 (다른 소스 데이터, 예: ESPN 수집분은 유지)
+  const existing = sheet.getDataRange().getValues();
+  for (let i = existing.length - 1; i >= 1; i--) {
+    if (String(existing[i][8]) === url) {
+      sheet.deleteRow(i + 1);
+    }
   }
 
-  // 수집 데이터 저장
+  // 수집 데이터 저장 (날짜·시간이 Date로 자동 변환되지 않도록 텍스트 서식 지정)
   if (rows.length > 0) {
-    sheet.getRange(2, 1, rows.length, 10)
-      .setValues(rows);
+    const startRow = sheet.getLastRow() + 1;
+    sheet.getRange(startRow, 2, rows.length, 2).setNumberFormat("@");
+    sheet.getRange(startRow, 1, rows.length, 10).setValues(rows);
   }
 
   Logger.log("EPL 수집 완료!");
