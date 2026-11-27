@@ -16,61 +16,78 @@ function testConnection() {
   Logger.log("현재 시트 이름: " + sheet.getName());
 }
 
-// 웹사이트에 경기 데이터 제공
 function doGet(e) {
-  try {
-    const sheet =
-      SpreadsheetApp.getActiveSpreadsheet().getSheetByName("경기정보");
-
-    if (!sheet) {
-      throw new Error("경기정보 시트를 찾을 수 없습니다.");
-    }
-
-    const values = sheet.getDataRange().getValues();
-
-    if (values.length <= 1) {
-      return createMatchResponse(
-        {
-          success: true,
-          data: [],
-        },
-        e,
-      );
-    }
-
-    const matches = values
-      .slice(1)
-      .filter((row) => row[0] && row[3] && row[4])
-      .map((row) => ({
-        league: String(row[0] || ""),
-        match_date: formatSheetDate(row[1]),
-        match_time: formatSheetTime(row[2]),
-        home_team: String(row[3] || ""),
-        away_team: String(row[4] || ""),
-        home_score: row[5] === "" ? "" : row[5],
-        away_score: row[6] === "" ? "" : row[6],
-        status: String(row[7] || ""),
-        source: String(row[8] || ""),
-      }));
-
-    return createMatchResponse(
-      {
-        success: true,
-        total: matches.length,
-        data: matches,
-      },
-      e,
-    );
-  } catch (error) {
-    return createMatchResponse(
-      {
-        success: false,
-        message: error.message,
-        data: [],
-      },
-      e,
-    );
+  const callback = e && e.parameter ? e.parameter.callback : "";
+  if (callback && /^[a-zA-Z_$][0-9a-zA-Z_$\.]*$/.test(callback)) {
+    return createMatchDataCallback_(callback);
   }
+
+  return createMatchPage_();
+}
+
+function createMatchPage_() {
+  let html = HtmlService.createHtmlOutputFromFile("index").getContent();
+  const styles = HtmlService.createHtmlOutputFromFile("WebAppCss").getContent();
+  const scripts =
+    HtmlService.createHtmlOutputFromFile("WebAppClient").getContent();
+  const matches = getMatchData_();
+
+  const styleTag = '<link rel="stylesheet" href="style.css" />';
+  const scriptTag = '<script src="script.js"></script>';
+  if (html.indexOf(styleTag) === -1 || html.indexOf(scriptTag) === -1) {
+    throw new Error("index.html의 CSS/JavaScript 참조를 찾을 수 없습니다.");
+  }
+
+  html = html.replace(styleTag, "<style>\n" + styles + "\n</style>");
+  const matchDataScript =
+    "<script>window.GLOBAL_FOOTBALL_MATCHES = " +
+    JSON.stringify(matches).replace(/</g, "\\u003c") +
+    ";</script>";
+  html = html.replace(
+    scriptTag,
+    matchDataScript + "\n<script>\n" + scripts + "\n</script>",
+  );
+
+  return HtmlService.createHtmlOutput(html).setTitle(
+    "GLOBAL-FOOTBALL | 해외축구 정보 플랫폼",
+  );
+}
+
+function getMatchData_() {
+  const sheet =
+    SpreadsheetApp.getActiveSpreadsheet().getSheetByName("경기정보");
+
+  if (!sheet) {
+    throw new Error("경기정보 시트를 찾을 수 없습니다.");
+  }
+
+  return sheet
+    .getDataRange()
+    .getValues()
+    .slice(1)
+    .filter((row) => row[0] && row[3] && row[4])
+    .map((row) => ({
+      league: String(row[0] || ""),
+      match_date: formatSheetDate(row[1]),
+      match_time: formatSheetTime(row[2]),
+      home_team: String(row[3] || ""),
+      away_team: String(row[4] || ""),
+      home_score: row[5] === "" ? "" : row[5],
+      away_score: row[6] === "" ? "" : row[6],
+      status: String(row[7] || ""),
+      source: String(row[8] || ""),
+    }));
+}
+
+function createMatchDataCallback_(callback) {
+  const response = {
+    success: true,
+    data: getMatchData_(),
+  };
+
+  return ContentService.createTextOutput(
+    callback + "(" + JSON.stringify(response) + ");",
+  ).setMimeType(ContentService.MimeType.JAVASCRIPT);
 }
 
 // 시트 날짜 형식 정리
@@ -96,21 +113,4 @@ function formatSheetTime(value) {
   }
 
   return String(value).trim();
-}
-
-// JSON 또는 JSONP 응답 생성
-function createMatchResponse(data, e) {
-  const json = JSON.stringify(data);
-
-  const callback = e && e.parameter ? e.parameter.callback : "";
-
-  if (callback && /^[a-zA-Z_$][0-9a-zA-Z_$\.]*$/.test(callback)) {
-    return ContentService.createTextOutput(
-      callback + "(" + json + ");",
-    ).setMimeType(ContentService.MimeType.JAVASCRIPT);
-  }
-
-  return ContentService.createTextOutput(json).setMimeType(
-    ContentService.MimeType.JSON,
-  );
 }

@@ -394,22 +394,42 @@ function prepareMatchSheet_() {
 }
 
 function upsertEspnMatches_(sheet, matches) {
+  return upsertMatches_(sheet, matches);
+}
+
+function upsertMatches_(sheet, matches) {
   const lastRow = sheet.getLastRow();
 
-  // 기존 game_id → 행 번호
   const rowById = {};
+  const rowByFixture = {};
+  const rowsWithResults = {};
   if (lastRow > 1) {
     sheet
-      .getRange(2, SHEET_COLUMNS, lastRow - 1, 1)
+      .getRange(2, 1, lastRow - 1, SHEET_COLUMNS)
       .getValues()
-      .forEach((r, i) => {
-        const id = String(r[0]).trim();
-        if (id) rowById[id] = i + 2;
+      .forEach((row, i) => {
+        const sheetRow = i + 2;
+        const id = String(row[10] || "").trim();
+        if (id) rowById[id] = sheetRow;
+        if (
+          String(row[7]).trim() === "완료" ||
+          (row[5] !== "" && row[6] !== "")
+        ) {
+          rowsWithResults[sheetRow] = true;
+        }
+        if (row[0] && row[3] && row[4]) {
+          rowByFixture[
+            matchFixtureKey_(row[0], row[1], row[3], row[4])
+          ] = sheetRow;
+        }
       });
   }
 
   const collectedAt = new Date();
   const newRows = [];
+  const newRowById = {};
+  const newRowByFixture = {};
+  const updatedRows = {};
   let updated = 0;
 
   matches.forEach((m) => {
@@ -427,14 +447,45 @@ function upsertEspnMatches_(sheet, matches) {
       m.gameId,
     ];
 
-    if (rowById[m.gameId]) {
-      const r = rowById[m.gameId];
+    const fixtureKey = matchFixtureKey_(
+      m.leagueKey,
+      m.date,
+      m.homeTeam,
+      m.awayTeam,
+    );
+    const existingRow =
+      rowById[m.gameId] || rowByFixture[fixtureKey];
+    if (existingRow) {
+      const r = existingRow;
+      if (m.status === "예정" && rowsWithResults[r]) return;
       sheet.getRange(r, 2, 1, 2).setNumberFormat("@");
-      sheet.getRange(r, 1, 1, SHEET_COLUMNS).setValues([row]);
-      updated++;
+      updatedRows[r] = row;
+      rowById[m.gameId] = r;
+      rowByFixture[fixtureKey] = r;
+    } else if (
+      newRowById[m.gameId] !== undefined ||
+      newRowByFixture[fixtureKey] !== undefined
+    ) {
+      const index =
+        newRowById[m.gameId] !== undefined
+          ? newRowById[m.gameId]
+          : newRowByFixture[fixtureKey];
+      if (m.status === "예정" && newRows[index][7] === "완료") return;
+      newRows[index] = row;
+      newRowById[m.gameId] = index;
+      newRowByFixture[fixtureKey] = index;
     } else {
+      const index = newRows.length;
       newRows.push(row);
+      newRowById[m.gameId] = index;
+      newRowByFixture[fixtureKey] = index;
     }
+  });
+
+  Object.keys(updatedRows).forEach((rowNumber) => {
+    const r = Number(rowNumber);
+    sheet.getRange(r, 1, 1, SHEET_COLUMNS).setValues([updatedRows[rowNumber]]);
+    updated++;
   });
 
   if (newRows.length > 0) {
@@ -516,23 +567,37 @@ function diagnoseEspn() {
    하루 1번 자동 실행 (수집 → 메일)
 ========================================= */
 
-function runEspnPipeline() {
-  collectEspnResults();
-  sendEspnResultsEmail();
+function runMatchDataPipeline() {
+  collectFootballDataMatches();
+  sendRecentResultsEmail();
 }
 
-function setupEspnDailyTrigger() {
+function runEspnPipeline() {
+  return runMatchDataPipeline();
+}
+
+function setupFootballDataDailyTrigger() {
   ScriptApp.getProjectTriggers().forEach((t) => {
-    if (t.getHandlerFunction() === "runEspnPipeline") {
+    const handler = t.getHandlerFunction();
+    if (
+      handler === "runEspnPipeline" ||
+      handler === "runMatchDataPipeline"
+    ) {
       ScriptApp.deleteTrigger(t);
     }
   });
 
-  ScriptApp.newTrigger("runEspnPipeline")
+  ScriptApp.newTrigger("runMatchDataPipeline")
     .timeBased()
     .everyDays(1)
     .atHour(8)
     .create();
 
-  Logger.log("매일 오전 8시 무렵 runEspnPipeline 이 실행되도록 설정했습니다.");
+  Logger.log(
+    "매일 오전 8시 무렵 공개 CSV 기반 경기 수집 및 결과 메일을 실행하도록 설정했습니다.",
+  );
+}
+
+function setupEspnDailyTrigger() {
+  return setupFootballDataDailyTrigger();
 }

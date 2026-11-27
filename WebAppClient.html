@@ -1,0 +1,104 @@
+/* ========================================= GLOBAL-FOOTBALL 경기 검색 및 화면
+제어 (한글 구단명 & 5대 리그 로고) ========================================= */
+if (typeof document !== "undefined") { let matchData =
+Array.isArray(window.GLOBAL_FOOTBALL_MATCHES) ? window.GLOBAL_FOOTBALL_MATCHES :
+[]; let dataStatus = "경기정보 시트에 표시할 데이터가 없습니다."; const
+leagueFilter = document.getElementById("leagueFilter"); const statusFilter =
+document.getElementById("statusFilter"); const teamSearch =
+document.getElementById("teamSearch"); const matchList =
+document.getElementById("matchList"); const matchCount =
+document.getElementById("matchCount"); const dataNotice =
+document.getElementById("dataNotice"); const leagueCards =
+document.querySelectorAll(".league-card"); // 로고가 없거나 로딩 실패 시 표시할
+기본 축구공 SVG 아이콘 const DEFAULT_TEAM_LOGO = "data:image/svg+xml;utf8," +
+encodeURIComponent( '<svg
+  xmlns="http://w3.org"
+  viewBox="0 0 24 24"
+  fill="%238490a3"
+>
+  <path
+    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 2c1.85 0 3.55.63 4.9 1.69L14.5 8h-5L7.1 5.69C8.45 4.63 10.15 4 12 4zm-6.31 3.1L8 9.5v5l-2.31 2.4C4.63 15.55 4 13.85 4 12s.63-3.55 1.69-4.9zM12 20c-1.85 0-3.55-.63-4.9-1.69L9.5 16h5l2.4 2.31C15.55 19.37 13.85 20 12 20zm6.31-3.1L16 14.5v-5l2.31-2.4C19.37 8.45 20 10.15 20 12s-.63 3.55-1.69 4.9z"
+  /></svg
+>' ); // ========================================================= // 유럽 5대
+리그 구단 한글명 & 공식 엠블럼 매핑 데이터 //
+========================================================= const TEAM_INFO_MAP =
+{ // [EPL] 잉글랜드 프리미어리그 "arsenal": { ko: "아스널", logo:
+"https://espncdn.com" }, "afc bournemouth": { ko: "본머스", logo:
+"https://espncdn.com" }, "bournemouth": { ko: "본머스", logo:
+"https://espncdn.com" }, "aston villa": { ko: "아스톤 빌라", logo:
+"https://espncdn.com" }, "brentford": { ko: "브렌트포드", logo:
+"https://espncdn.com" }, "brighton": { ko: "브라이튼", logo:
+"https://espncdn.com" }, "brighton and hove albion": { ko: "브라이튼", logo:
+"https://espncdn.com" }, "brighton hove albion": { ko: "브라이튼", logo:
+"https://espncdn.com" }, "burnley": { ko: "번리", logo: "https://espncdn.com" },
+"chelsea": { ko: "첼시", logo: "https://espncdn.com" }, "crystal palace": { ko:
+"크리스탈 팰리스", logo: "https://espncdn.com" }, "everton": { ko: "에버턴",
+logo: "https://espncdn.com" }, "fulham": { ko: "풀럼", logo:
+"https://espncdn.com" }, "ipswich": { ko: "입스위치 타운", logo:
+"https://espncdn.com" }, "ipswich town": { ko: "입스위치 타운", logo:
+"https://espncdn.com" }, "leeds": { ko: "리즈 유나이티드", logo:
+"https://espncdn.com" }, "leeds united": { ko: "리즈 유나이티드", logo:
+"https://espncdn.com" }, "leicester": { ko: "레스터 시티", logo:
+"https://espncdn.com" }, "leicester city": { ko: "레스터 시티", logo:
+"https://espncdn.com" }, "liverpool": { ko: "리버풀", logo:
+"https://espncdn.com" }, "luton": { ko: "루턴 타운", logo: "https://espncdn.com"
+}, "luton town": { ko: "루턴 타운", logo: "https://espncdn.com" }, "man city": {
+ko: "맨체스터 시티", logo: "https://espncdn.com" }, "manchester city": { ko:
+"맨체스터 시티", logo: "https://espncdn.com" }, "man utd": { ko: "맨체스터
+유나이티드", logo: "https://espncdn.com" }, "man united": { ko: "맨체스터
+유나이티드", logo: "https://espncdn.com" }, "manchester united": { ko: "맨체스터
+유나이티드", logo: "https://espncdn.com" }, "newcastle": { ko: "뉴캐슬
+유나이티드", logo: "https://espncdn.com" }, "newcastle united": { ko: "뉴캐슬
+유나이티드", logo: "https://espncdn.com" }, "nott m forest": { ko: "노팅엄
+포레스트", logo: "https://espncdn.com" }, "nottingham forest": { ko: "노팅엄
+포레스트", logo: "https://espncdn.com" }, "sheffield utd": { ko: "셰필드
+유나이티드", logo: "https://espncdn.com" }, "sheffield united": { ko: "셰필드
+유나이티드", logo: "https://espncdn.com" }, "southampton": { ko: "사우샘프턴",
+logo: "https://espncdn.com" }, "sunderland": { ko: "선덜랜드", logo:
+"https://espncdn.com" }, "spurs": { ko: "토트넘 홋스퍼", logo:
+"https://espncdn.com" }, "tottenham": { ko: "토트넘 홋스퍼", logo:
+"https://espncdn.com" }, "tottenham hotspur": { ko: "토트넘 홋스퍼", logo:
+"https://espncdn.com" }, "west ham": { ko: "웨스트햄 유나이티드", logo:
+"https://espncdn.com" }, "west ham united": { ko: "웨스트햄 유나이티드", logo:
+"https://espncdn.com" }, "wolves": { ko: "울버햄튼", logo: "https://espncdn.com"
+}, "wolverhampton wanderers": { ko: "울버햄튼", logo: "https://espncdn.com" },
+// [La Liga] 스페인 라리가 "alaves": { ko: "알라베스", logo:
+"https://espncdn.com" }, "deportivo alaves": { ko: "알라베스", logo:
+"https://espncdn.com" }, "almeria": { ko: "알메리아", logo:
+"https://espncdn.com" }, "ath bilbao": { ko: "아틀레틱 빌바오", logo:
+"https://espncdn.com" }, "athletic bilbao": { ko: "아틀레틱 빌바오", logo:
+"https://espncdn.com" }, "athletic club": { ko: "아틀레틱 빌바오", logo:
+"https://espncdn.com" }, "ath madrid": { ko: "아틀레티코 마드리드", logo:
+"https://espncdn.com" }, "atletico madrid": { ko: "아틀레티코 마드리드", logo:
+"https://espncdn.com" }, "atletico de madrid": { ko: "아틀레티코 마드리드",
+logo: "https://espncdn.com" }, "barcelona": { ko: "FC 바르셀로나", logo:
+"https://espncdn.com" }, "fc barcelona": { ko: "FC 바르셀로나", logo:
+"https://espncdn.com" }, "betis": { ko: "레알 베티스", logo:
+"https://espncdn.com" }, "real betis": { ko: "레알 베티스", logo:
+"https://espncdn.com" }, "cadiz": { ko: "카디스", logo: "https://espncdn.com" },
+"celta": { ko: "셀타 비고", logo: "https://espncdn.com" }, "celta vigo": { ko:
+"셀타 비고", logo: "https://espncdn.com" }, "rc celta": { ko: "셀타 비고", logo:
+"https://espncdn.com" }, "elche": { ko: "엘체", logo: "https://espncdn.com" },
+"elche cf": { ko: "엘체", logo: "https://espncdn.com" }, "espanyol": { ko:
+"에스파뇰", logo: "https://espncdn.com" }, "rcd espanyol": { ko: "에스파뇰",
+logo: "https://espncdn.com" }, "rcd espanyol de barcelona": { ko: "에스파뇰",
+logo: "https://espncdn.com" }, "getafe": { ko: "헤타페", logo:
+"https://espncdn.com" }, "getafe cf": { ko: "헤타페", logo:
+"https://espncdn.com" }, "girona": { ko: "지로나", logo: "https://espncdn.com"
+}, "granada": { ko: "그라나다", logo: "https://espncdn.com" }, "las palmas": {
+ko: "라스 팔마스", logo: "https://espncdn.com" }, "leganes": { ko: "레가네스",
+logo: "https://espncdn.com" }, "levante": { ko: "레반테", logo:
+"https://espncdn.com" }, "levante ud": { ko: "레반테", logo:
+"https://espncdn.com" }, "mallorca": { ko: "마요르카", logo:
+"https://espncdn.com" }, "rcd mallorca": { ko: "마요르카", logo:
+"https://espncdn.com" }, "osasuna": { ko: "오사수나", logo:
+"https://espncdn.com" }, "ca osasuna": { ko: "오사수나", logo:
+"https://espncdn.com" }, "oviedo": { ko: "레알 오비에도", logo:
+"https://espncdn.com" }, "real oviedo": { ko: "레알 오비에도", logo:
+"https://espncdn.com" }, "rayo vallecano": { ko: "라요 바예카노", logo:
+"https://espncdn.com" }, "vallecano": { ko: "라요 바예카노", logo:
+"https://espncdn.com" }, "real madrid": { ko: "레알 마드리드", logo:
+"https://espncdn.com" }, "sociedad": { ko: "레알 소시에다드", logo:
+"https://espncdn.com" }, "real sociedad": { ko: "레알 소시에다드", logo:
+"https://espncdn.com" }, "sevilla": { ko: "세비야", logo: "https://espncdn.com"
+}, "sevilla fc": { ko: "세비야", logo: "https://espncdn.com" },

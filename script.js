@@ -6,8 +6,10 @@
 if (typeof document !== "undefined") {
   const APPS_SCRIPT_WEB_APP_URL =
     "https://script.google.com/macros/s/AKfycbwdr5cRa758HAj_LnWTFFCg7f5Pnftjoo7MHo7x00g-lmvJntjQ5cDMi-eOWnbbgR7MwA/exec";
-
-  let matchData = [];
+  const hasEmbeddedMatchData = Array.isArray(window.GLOBAL_FOOTBALL_MATCHES);
+  let matchData = hasEmbeddedMatchData
+    ? window.GLOBAL_FOOTBALL_MATCHES
+    : [];
   let dataStatus = "Apps Script에서 경기 데이터를 불러오는 중입니다.";
 
   const leagueFilter = document.getElementById("leagueFilter");
@@ -192,20 +194,33 @@ if (typeof document !== "undefined") {
     dataNotice.textContent = message;
   }
 
-  function loadMatchData() {
-    const endpoint = APPS_SCRIPT_WEB_APP_URL.trim();
-
-    if (!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec\/?(?:\?.*)?$/.test(endpoint)) {
-      setDataStatus(
-        "Apps Script 웹 앱의 /exec URL을 script.js에 설정해야 경기 결과가 표시됩니다.",
-      );
-      renderMatches([]);
+  function updateMatchDataStatus() {
+    if (matchData.length === 0) {
+      setDataStatus("경기정보 시트에 표시할 데이터가 없습니다.");
       return;
     }
 
+    const latestResultDate = matchData
+      .filter(hasMatchScore)
+      .map((match) => String(match.match_date || ""))
+      .filter(Boolean)
+      .sort()
+      .pop();
+
+    setDataStatus(
+      matchData.length +
+        "경기를 불러왔습니다. 최근 결과 기준일: " +
+        (latestResultDate
+          ? formatMatchDate(latestResultDate)
+          : "완료된 결과 없음"),
+    );
+  }
+
+  function loadMatchData() {
     const callbackName = "globalFootballMatches_" + Date.now();
     const requestScript = document.createElement("script");
     let completed = false;
+    let timeoutId;
 
     function cleanup() {
       window.clearTimeout(timeoutId);
@@ -215,18 +230,16 @@ if (typeof document !== "undefined") {
       }
     }
 
-    function fail(error) {
+    function fail(message) {
       if (completed) return;
       completed = true;
       cleanup();
-      const message = "경기 데이터를 불러오지 못했습니다: " + error.message;
-      setDataStatus(message);
+      setDataStatus("경기 데이터를 불러오지 못했습니다: " + message);
       renderMatches([]);
-      console.error(message, error);
     }
 
-    const timeoutId = window.setTimeout(() => {
-      fail(new Error("요청 시간이 초과되었습니다."));
+    timeoutId = window.setTimeout(() => {
+      fail("Apps Script 요청 시간이 초과되었습니다.");
     }, 15000);
 
     window[callbackName] = (response) => {
@@ -236,11 +249,9 @@ if (typeof document !== "undefined") {
         !Array.isArray(response.data)
       ) {
         fail(
-          new Error(
-            response && response.message
-              ? response.message
-              : "Apps Script 응답 형식이 올바르지 않습니다.",
-          ),
+          response && response.message
+            ? response.message
+            : "경기 데이터 응답을 확인할 수 없습니다.",
         );
         return;
       }
@@ -248,31 +259,21 @@ if (typeof document !== "undefined") {
       completed = true;
       cleanup();
       matchData = response.data;
-      const latestResultDate = matchData
-        .filter(hasMatchScore)
-        .map((match) => String(match.match_date || ""))
-        .filter(Boolean)
-        .sort()
-        .pop();
-      setDataStatus(
-        matchData.length === 0
-          ? "경기정보 시트에 표시할 데이터가 없습니다."
-          : matchData.length +
-              "경기를 불러왔습니다. 최근 결과 기준일: " +
-              (latestResultDate
-                ? formatMatchDate(latestResultDate)
-                : "완료된 결과 없음"),
-      );
+      updateMatchDataStatus();
       filterMatches();
     };
 
     requestScript.onerror = () => {
-      fail(new Error("웹 앱 URL 또는 배포 권한을 확인해주세요."));
+      fail("Apps Script 배포 주소 또는 접근 권한을 확인해주세요.");
     };
 
-    const separator = endpoint.indexOf("?") === -1 ? "?" : "&";
+    const separator =
+      APPS_SCRIPT_WEB_APP_URL.indexOf("?") === -1 ? "?" : "&";
     requestScript.src =
-      endpoint + separator + "callback=" + encodeURIComponent(callbackName);
+      APPS_SCRIPT_WEB_APP_URL +
+      separator +
+      "callback=" +
+      encodeURIComponent(callbackName);
     document.head.appendChild(requestScript);
   }
 
@@ -322,6 +323,10 @@ if (typeof document !== "undefined") {
   });
 
   // 최초 화면 표시
-  renderMatches(matchData);
-  loadMatchData();
+  if (hasEmbeddedMatchData) {
+    updateMatchDataStatus();
+    filterMatches();
+  } else {
+    loadMatchData();
+  }
 }
